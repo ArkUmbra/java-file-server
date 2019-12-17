@@ -1,7 +1,6 @@
-package com.luke.fileserver.file;
+package com.arkumbra.fileserver.file;
 
-//import static com.luke.fileserver.file.FileFetcherCollector.toFileNames;
-
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -18,45 +17,40 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
-public class FileFetcher {
+public class FileFetcherImpl implements FileFetcher {
 
-  private Predicate<Path> filterByExtension = FileFetcherFilter.byExtension(".txt");
-  private FileFetcherCollector collectByFileNames = new FileFetcherCollector();
-
+  private final Predicate<Path> filterByExtension;
+  private final FileFetcherCollector collectByFileNames = new FileFetcherCollector();
 
   private final Path path;
 
-  public FileFetcher(String baseDir) {
-    path = Path.of(baseDir);
+  public FileFetcherImpl(String baseDir, String supportedExtension) {
+    this.filterByExtension = FileFetcherFilter.byExtension(supportedExtension);
+    this.path = Path.of(baseDir);
+
+    System.out.println("Serving " + supportedExtension + " documents from " + baseDir);
   }
 
-  public Collection<String> listAllFiles() throws IOException {
-    List<String> filtered = Files.list(path)
-        //.filter(FileFetcherFilter.byExtension(".txt"))
+  public synchronized Collection<String> listAllFiles() throws IOException {
+    return Files.list(path)
         .filter(filterByExtension)
-//        .collect(toFileNames());
         .collect(collectByFileNames);
-
-    return filtered;
   }
 
-  public String get(String filename) throws IOException {
+  public synchronized String get(String filename) throws FileNotFoundException, IOException {
     byte[] contents = Files.readAllBytes(Path.of(path.toString() + "/" + filename));
     return new String(contents, Charset.forName("UTF-8"));
   }
 
 }
 
-class FileFetcherFilter /*implements Predicate<Path>*/ {
+
+class FileFetcherFilter {
 
   public static Predicate<Path> byExtension(String extension) {
-    return p -> p.toFile().getName().endsWith(extension);//p.getFileName().endsWith(extension);//p.endsWith(extension);//p.getFileName().endsWith(extension);
+    return p -> p.toFile().getName().endsWith(extension);
   }
 
-//  @Override
-//  public boolean test(Path path) {
-//    return path.toFile().getName().endsWith(".txt");
-//  }
 }
 
 class FileFetcherCollector implements Collector<Path, List<String>, List<String>> {
@@ -90,16 +84,6 @@ class FileFetcherCollector implements Collector<Path, List<String>, List<String>
   public Set<Characteristics> characteristics() {
     return Collections.emptySet();
   }
-
-//  public static FileFetcherCollector toFileNames() {
-//    return new FileFetcherCollector();
-//  }
-//  public static Collect
-
-//  public static <T> Collector<T, ?, List<T>> toFileNames() {
-//    return new CollectorImpl<>((Supplier<List<T>>) ArrayList::new, List::add,
-//        (left, right) -> { left.addAll(right); return left; },
-//        CH_ID);
 
 }
 

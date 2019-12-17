@@ -1,8 +1,9 @@
-package com.luke.fileserver;
+package com.arkumbra.fileserver;
 
 import static org.junit.Assert.assertEquals;
 
-import com.luke.fileserver.file.FileFetcher;
+import com.arkumbra.fileserver.file.FileFetcher;
+import com.arkumbra.fileserver.file.FileFetcherImpl;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Random;
@@ -23,9 +24,9 @@ public class FileFetcherTest {
   @Before
   public void setUp() {
     this.random = new Random();
-    // TODO create random dir in tmp
-    // TODO clean up
-    this.subjectUnderTest = new FileFetcher(folder.getRoot().getAbsolutePath());
+
+    String fileExtension = ".txt";
+    this.subjectUnderTest = new FileFetcherImpl(folder.getRoot().getAbsolutePath(), fileExtension);
   }
 
   @Test
@@ -43,7 +44,7 @@ public class FileFetcherTest {
 
   @Test
   public void testGetFile() throws IOException {
-    FileFetcher ff = new FileFetcher("/Users/luke/scrapbook/java-file-server");
+    FileFetcher ff = new FileFetcherImpl("/Users/luke/scrapbook/java-file-server", ".txt");
     String fileContent = ff.get("test.txt");
     System.out.println(fileContent);
   }
