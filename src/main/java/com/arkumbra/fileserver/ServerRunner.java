@@ -20,7 +20,7 @@ public class ServerRunner {
     new ServerRunner().launch(baseDir, extension);
   }
 
-  private void launch(String baseDir, String extension) {
+  public void launch(String baseDir, String extension) {
     FileFetcher fileFetcher = new FileFetcherImpl(baseDir, extension);
 
     try {

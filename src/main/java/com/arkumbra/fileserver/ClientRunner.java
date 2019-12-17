@@ -3,6 +3,14 @@ package com.arkumbra.fileserver;
 import com.arkumbra.fileserver.client.Client;
 import com.arkumbra.fileserver.client.SocketClient;
 import com.arkumbra.fileserver.message.Response;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.io.Reader;
+import java.nio.Buffer;
 import java.util.Scanner;
 
 /**
@@ -10,10 +18,34 @@ import java.util.Scanner;
  */
 public class ClientRunner {
 
-  private Client client = new SocketClient();
+  private final Client client = new SocketClient();
+//  private final InputStream in;
+//  private final Scanner scanner;
+  private final BufferedReader bufferedReader;
+  private final PrintStream out;
+  private final PrintStream err;
 
   public static void main(String... args) {
     new ClientRunner().run();
+  }
+
+  public ClientRunner() {
+//    this.in = System.in;
+//    this.scanner = new Scanner(System.in);
+    Reader reader = new InputStreamReader(System.in);
+    this.bufferedReader = new BufferedReader(reader);
+    this.out = System.out;
+    this.err = System.err;
+  }
+
+  /**
+   * Override the input stream
+   * @param in
+   */
+  public ClientRunner(BufferedReader reader, PrintStream out, PrintStream err) {
+    this.bufferedReader = reader;
+    this.out = out;
+    this.err = err;
   }
 
   public void run() {
@@ -26,11 +58,21 @@ public class ClientRunner {
       err("Error establishing connection to server: " + e.getMessage());
     }
 
-    Scanner scanner = new Scanner(System.in);
+//    Scanner scanner = new Scanner(in);
+
     while (! completed) {
-      System.out.print("$ ");
-      String input = scanner.nextLine();
+      out.print("$ ");
+      String input = readLine();
       completed = handleInput(input);
+    }
+  }
+
+  private String readLine() {
+    try {
+      return bufferedReader.readLine();
+    } catch (IOException e) {
+      e.printStackTrace();
+      return "";
     }
   }
 
@@ -62,26 +104,15 @@ public class ClientRunner {
       return true;
     }
 
-////    System.out.println("Your input: " + input);
-//    if (input.equals("quit") || input.equals("q")) {
-//      return true;
-//    } else if (input.equals("index")) {
-//
-//    } else if (input.startsWith("get ")) {
-//
-//    } else {
-//      printErr(UNKNOWN_COMMAND);
-//    }
-//
-//    return false;
+
   }
 
   private void log(String msg) {
-    System.out.println(msg);
+    out.println(msg);
   }
 
   private void err(String msg) {
-    System.err.println(msg);
+    err.println(msg);
   }
 
 }
