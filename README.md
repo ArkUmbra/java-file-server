@@ -13,12 +13,12 @@ Or, if you are on windows
 ```
 
 
-##Launch Server
+## Launch Server
 ```
 java -jar build/libs/java-file-server.jar YOURDIRECTORYPATH
 ```
 
-##Launch Client
+## Launch Client
 ```
 java -jar build/libs/java-file-client.jar
 ```
