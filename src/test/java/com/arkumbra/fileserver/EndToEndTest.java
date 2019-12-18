@@ -89,6 +89,7 @@ public class EndToEndTest {
     folder.newFile(notValidExt);
 
     doIndex(socketClient, validFileName);
+    doGetFile(socketClient, validFileName);
   }
 
   @Test
@@ -112,7 +113,7 @@ public class EndToEndTest {
     doIndex(socketClient, validFileName);
   }
 
-  private void doIndex(SocketClient client, String... expectedFiles) throws Exception {
+  private void doIndex(SocketClient client, String... expectedFiles) throws ClientException {
     Response indexResponse = client.handleCommand(Command.INDEX);
     assertFalse(indexResponse.isError());
     assertFalse(indexResponse.isClosed());
@@ -124,6 +125,13 @@ public class EndToEndTest {
     for (int i = 0; i < expectedFiles.length; i++) {
       assertEquals(expectedFiles[i], listings[i]);
     }
+  }
+
+  private void doGetFile(SocketClient client, String filename) throws ClientException {
+    Response response = client.handleCommand(Command.GET_PREFIX + filename);
+    assertFalse(response.isError());
+    assertFalse(response.isClosed());
+    System.out.print(response.getMsg());
   }
 
 }

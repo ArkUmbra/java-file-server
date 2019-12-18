@@ -32,6 +32,11 @@ public class ClientRunnerTest {
   }
 
   @Test
+  public void testInitialisation() {
+    new ClientRunner();
+  }
+
+  @Test
   public void testCanQuitClientRunner() throws Exception {
     String command1 = "unittest-quit";
     String commands = String.join("\n", command1);
