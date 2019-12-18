@@ -44,7 +44,11 @@ public class SocketServer implements Server {
 
   @Override
   public void shutdown() {
-// TODO
+    try {
+      server.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 
 

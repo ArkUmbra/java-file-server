@@ -1,5 +1,16 @@
 package com.arkumbra.fileserver;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
+import com.arkumbra.fileserver.client.ClientException;
+import com.arkumbra.fileserver.client.SocketClient;
+import com.arkumbra.fileserver.file.FileFetcher;
+import com.arkumbra.fileserver.file.FileFetcherImpl;
+import com.arkumbra.fileserver.message.Messages;
+import com.arkumbra.fileserver.message.Response;
+import com.arkumbra.fileserver.server.Command;
+import com.arkumbra.fileserver.server.SocketServer;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -8,9 +19,11 @@ import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
+import java.net.Socket;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.Scanner;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,139 +31,99 @@ import org.junit.rules.TemporaryFolder;
 
 public class EndToEndTest {
 
-  private static final String ext = ".txt";
+  private static final String EXTENSION = ".txt";
 
   @Rule
   public TemporaryFolder folder = new TemporaryFolder();
 
-  private ClientRunner clientRunner;
-  private ServerRunner serverRunner;
+  private SocketClient socketClient;
+  private SocketServer socketServer;
+  private Thread serverThread;
 
   @Before
   public void setUp() throws Exception {
-//    this.serverRunner = new ServerRunner();
-//    serverRunner.launch(folder.getRoot().getAbsolutePath(), ext);
-//
-//    this.clientRunner = new ClientRunner();
-//    clientRunner.run();
+    FileFetcher fileFetcher = new FileFetcherImpl(folder.getRoot().getAbsolutePath(), EXTENSION);
+
+    this.socketClient = new SocketClient();
+    this.socketServer = new SocketServer(fileFetcher);
+
+    serverThread = new Thread(() -> socketServer.launch());
+    serverThread.start();
   }
 
-  // TODO change test to use the socket classes, not runners
+  @After
+  public void tearDown() throws InterruptedException {
+    System.out.print("Shutting down server and disconnecting associated clients");
+    socketServer.shutdown();
+//    serverThread.interrupt();
+  }
+
+
   @Test
-  public void test() throws InterruptedException {
-    ServerRunnable server = new ServerRunnable(folder.getRoot().getAbsolutePath(), ext);
-    new Thread(server).start();
-
-    Thread.sleep(2000);
-
-    TestReader reader = new TestReader();
-
-    ClientRunnable client = new ClientRunnable(reader, System.out, System.err);
-    new Thread(client).start();
-    reader.append("index");
-
-
-    Thread.sleep(1000);
-    System.out.println("test");
+  public void testGreeting() throws ClientException {
+    doGreeting(socketClient);
   }
 
-}
-
-class ClientRunnable implements Runnable {
-  private ClientRunner clientRunner;
-
-  /* Pass in input stream so that client can be controlled */
-  public ClientRunnable(TestReader testReader, PrintStream out, PrintStream err) {
-    this.clientRunner = new ClientRunner(testReader, out, err);
-  }
-
-  @Override
-  public void run() {
-    clientRunner.run();
-  }
-}
-
-class ServerRunnable implements Runnable {
-  private String path;
-  private String ext;
-
-  public ServerRunnable(String path, String ext) {
-    this.path = path;
-    this.ext = ext;
-  }
-
-  @Override
-  public void run() {
-//    this.serverRunner = new ServerRunner();
-//    while (true)
-    new ServerRunner().launch(path, ext);
-  }
-}
-
-/** Custom instance so that we can override nextLine() */
-//class TestScanner extends Scanner {
-//  private final Queue<String> queue = new ArrayDeque<>();
-//
-//  public TestScanner() {
-//    super(System.in);
-//  }
-//
-//  public void append(String line) {
-//    synchronized (queue) {
-//      queue.add(line);
-//    }
-//  }
-//
-//  @Override
-//  public String nextLine() {
-//    while (true) {
-//      synchronized (queue) {
-//        if (! queue.isEmpty()) {
-//          return queue.poll();
-//        }
-//      }
-//
-//      // sleep until something is sent in
-//      try {
-//        Thread.sleep(100);
-//      } catch (InterruptedException e) {
-//        e.printStackTrace();
-//      }
-//    }
-//}
-
-class TestReader extends BufferedReader {
-
-  private final Queue<String> queue = new ArrayDeque<>();
-
-  public TestReader() {
-    super(Reader.nullReader());
-  }
-
-  public void append(String line) {
-    synchronized (queue) {
-      queue.add(line);
+  @Test
+  public void testGreetingWithMultipleClients() throws ClientException {
+    for (int i = 0; i < 10; i++) {
+      SocketClient client = new SocketClient();
+      doGreeting(client);
     }
   }
 
-  @Override
-  public String readLine() {
-    while (true) {
-      synchronized (queue) {
-        if (!queue.isEmpty()) {
-          String item =  queue.poll();
-          System.out.println(item);
-          return item;
-        }
-      }
+  private void doGreeting(SocketClient client) throws ClientException {
+    Response greeting = client.initConnection();
+    assertFalse(greeting.isClosed());
+    assertFalse(greeting.isError());
+    assertEquals(Messages.GREETING, greeting.getMsg());
+  }
 
-      // sleep until something is sent in
-      try {
-        System.out.println("Blocking");
-        Thread.sleep(100);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
+  @Test
+  public void testListingIndexOfFiles() throws Exception {
+    doGreeting(socketClient);
+
+    String validFileName = "somefile.txt";
+    String notValidExt = "somefile2.jpg";
+    folder.newFile(validFileName);
+    folder.newFile(notValidExt);
+
+    doIndex(socketClient, validFileName);
+  }
+
+  @Test
+  public void testListingIndexOfFilesWithMultipleClients() throws Exception {
+    doGreeting(socketClient);
+
+    String validFileName = "somefile.txt";
+    String notValidExt = "somefile2.jpg";
+    folder.newFile(validFileName);
+    folder.newFile(notValidExt);
+
+    // check client 1 gets correct files
+    doIndex(socketClient, validFileName);
+
+    // check client 2 gets correct files
+    SocketClient client2 = new SocketClient();
+    doGreeting(client2);
+    doIndex(client2, validFileName);
+
+    // check client 1 still gets correct files after client 2
+    doIndex(socketClient, validFileName);
+  }
+
+  private void doIndex(SocketClient client, String... expectedFiles) throws Exception {
+    Response indexResponse = client.handleCommand(Command.INDEX);
+    assertFalse(indexResponse.isError());
+    assertFalse(indexResponse.isClosed());
+    System.out.print(indexResponse.getMsg());
+
+    // Check the correct file was listed
+    String[] listings = indexResponse.getMsg().split("\n");
+    assertEquals(expectedFiles.length, listings.length);
+    for (int i = 0; i < expectedFiles.length; i++) {
+      assertEquals(expectedFiles[i], listings[i]);
     }
   }
+
 }

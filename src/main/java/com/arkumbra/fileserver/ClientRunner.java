@@ -1,16 +1,11 @@
 package com.arkumbra.fileserver;
 
 import com.arkumbra.fileserver.client.Client;
+import com.arkumbra.fileserver.client.ClientException;
 import com.arkumbra.fileserver.client.SocketClient;
 import com.arkumbra.fileserver.message.Response;
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.PrintStream;
-import java.io.Reader;
-import java.nio.Buffer;
 import java.util.Scanner;
 
 /**
@@ -18,10 +13,8 @@ import java.util.Scanner;
  */
 public class ClientRunner {
 
-  private final Client client = new SocketClient();
-//  private final InputStream in;
-//  private final Scanner scanner;
-  private final BufferedReader bufferedReader;
+  private final Client client;
+  private final InputStream in;
   private final PrintStream out;
   private final PrintStream err;
 
@@ -29,21 +22,18 @@ public class ClientRunner {
     new ClientRunner().run();
   }
 
+
   public ClientRunner() {
-//    this.in = System.in;
-//    this.scanner = new Scanner(System.in);
-    Reader reader = new InputStreamReader(System.in);
-    this.bufferedReader = new BufferedReader(reader);
+    this.client = new SocketClient();
+
+    this.in = System.in;
     this.out = System.out;
     this.err = System.err;
   }
 
-  /**
-   * Override the input stream
-   * @param in
-   */
-  public ClientRunner(BufferedReader reader, PrintStream out, PrintStream err) {
-    this.bufferedReader = reader;
+  public ClientRunner(Client client, InputStream in, PrintStream out, PrintStream err) {
+    this.client = client;
+    this.in = in;
     this.out = out;
     this.err = err;
   }
@@ -54,36 +44,28 @@ public class ClientRunner {
     try {
       Response initResponse = client.initConnection();
       log(initResponse.getMsg());
-    } catch (Exception e) {
+    } catch (ClientException e) {
       err("Error establishing connection to server: " + e.getMessage());
+      return;
     }
 
-//    Scanner scanner = new Scanner(in);
+    Scanner scanner = new Scanner(in);
 
     while (! completed) {
       out.print("$ ");
-      String input = readLine();
+      String input = scanner.nextLine();
       completed = handleInput(input);
     }
   }
 
-  private String readLine() {
-    try {
-      return bufferedReader.readLine();
-    } catch (IOException e) {
-      e.printStackTrace();
-      return "";
-    }
-  }
-
-
-  // TODO instead of handling on client side, just send message raw to server and let it handle
   /***
    * @return boolean indicating whether program has completed
    */
   private boolean handleInput(String input) {
+    Response response;
     try {
-      Response response = client.handleCommand(input);
+      response = client.handleCommand(input);
+
       if (response.isClosed()) {
         log("Exiting");
         return true;
@@ -98,13 +80,11 @@ public class ClientRunner {
         return false;
       }
 
-
-    } catch (Exception e) {
-      e.printStackTrace();
+    } catch (ClientException e) {
+      err(e.getMessage());
+      err("An exception was encountered, so the program will now close");
       return true;
     }
-
-
   }
 
   private void log(String msg) {

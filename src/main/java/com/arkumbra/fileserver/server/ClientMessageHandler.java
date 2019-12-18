@@ -65,14 +65,14 @@ public class ClientMessageHandler implements Runnable {
 
   private boolean handleInput(String input, ObjectOutputStream oos) throws IOException {
     // exit check
-    if (input.equals("quit") || input.equals("q")) {
+    if (input.equals(Command.QUIT) || input.equals(Command.QUIT_SHORT)) {
       sendClose(oos, "Quitting");
       return true;
     }
 
-    if (input.equals("index")) {
+    if (input.equals(Command.INDEX)) {
       doIndexCommand(oos);
-    } else if (input.startsWith("get ")) {
+    } else if (input.startsWith(Command.GET_PREFIX)) {
       doGetFile(oos, input);
     } else {
       sendError(oos, Messages.UNKNOWN_COMMAND);

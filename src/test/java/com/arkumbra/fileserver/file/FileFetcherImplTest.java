@@ -1,9 +1,7 @@
-package com.arkumbra.fileserver;
+package com.arkumbra.fileserver.file;
 
 import static org.junit.Assert.assertEquals;
 
-import com.arkumbra.fileserver.file.FileFetcher;
-import com.arkumbra.fileserver.file.FileFetcherImpl;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Random;
@@ -12,7 +10,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class FileFetcherTest {
+public class FileFetcherImplTest {
 
   @Rule
   public TemporaryFolder folder = new TemporaryFolder();

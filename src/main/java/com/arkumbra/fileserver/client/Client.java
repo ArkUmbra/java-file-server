@@ -8,10 +8,10 @@ public interface Client {
   /**
    * Establish connection with the server, if required
    * @return connection response from server
-   * @throws Exception
+   * @throws ClientException when connection issue, etc arises
    */
-  Response initConnection() throws Exception;
+  Response initConnection() throws ClientException;
 
-  Response handleCommand(String input) throws Exception;
+  Response handleCommand(String input) throws ClientException;
 
 }

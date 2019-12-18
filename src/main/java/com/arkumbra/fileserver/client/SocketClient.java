@@ -1,51 +1,62 @@
 package com.arkumbra.fileserver.client;
 
 import com.arkumbra.fileserver.message.Response;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 public class SocketClient implements Client {
-  public String address = "127.0.0.1";
-  public int port = 9090;
+  private static final String address = "127.0.0.1";
+  private static final int port = 9090;
 
   private Socket socket;
   private ObjectOutputStream oos;
   private ObjectInputStream ois;
 
-
   @Override
-  public Response initConnection() throws IOException {
-    socket = new Socket(address, port);
-    this.oos = new ObjectOutputStream(socket.getOutputStream());
-    this.ois = new ObjectInputStream(socket.getInputStream());
-
-    return doGreeting();
-  }
-
-  private Response doGreeting() throws IOException {
+  public Response initConnection() throws ClientException {
     try {
-      return (Response) ois.readObject();
+      socket = new Socket(address, port);
+      this.oos = new ObjectOutputStream(socket.getOutputStream());
+      this.ois = new ObjectInputStream(socket.getInputStream());
+
+      return doGreeting();
+
     } catch (IOException | ClassNotFoundException e) {
-      throw new IOException(e);
+      throw new ClientException(e);
     }
   }
 
-  @Override
-  public Response handleCommand(String input) throws Exception {
+  private Response doGreeting() throws IOException, ClassNotFoundException {
+    return (Response) ois.readObject();
+  }
 
+  @Override
+  public Response handleCommand(String input) throws ClientException {
     try {
       // send message to server
       oos.writeObject(input);
       // receive response from server
       return (Response) ois.readObject();
 
-    } catch (Exception e) {
-      socket.close();
-      oos.close();
-      ois.close();
-      throw e;
+    } catch (IOException e) {
+      closeQuietly(socket);
+      closeQuietly(oos);
+      closeQuietly(ois);
+      throw new ClientException(e);
+
+    } catch (ClassNotFoundException e) {
+      throw new ClientException(e);
+    }
+  }
+
+  private void closeQuietly(Closeable closeable) {
+    try {
+      closeable.close();
+    } catch (IOException e) {
+      // closing quietly, so don't need to print anything
     }
   }
 
