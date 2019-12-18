@@ -52,10 +52,9 @@ public class EndToEndTest {
   }
 
   @After
-  public void tearDown() throws InterruptedException {
-    System.out.print("Shutting down server and disconnecting associated clients");
+  public void tearDown() {
+    System.out.println("Shutting down server and disconnecting associated clients");
     socketServer.shutdown();
-//    serverThread.interrupt();
   }
 
 

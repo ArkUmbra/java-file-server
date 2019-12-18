@@ -31,13 +31,24 @@ public class FileFetcherImpl implements FileFetcher {
     System.out.println("Serving " + supportedExtension + " documents from " + baseDir);
   }
 
+  /**
+   *
+   * @return list of file names in the server directory which match the predefined file extension
+   * @throws IOException error listing files
+   */
   public synchronized Collection<String> listAllFiles() throws IOException {
     return Files.list(path)
         .filter(filterByExtension)
         .collect(collectByFileNames);
   }
 
-  public synchronized String get(String filename) throws FileNotFoundException, IOException {
+  /**
+   *
+   * @param filename whose content is requested
+   * @return Contents of file as string
+   * @throws IOException in case where reading of file has failed
+   */
+  public synchronized String get(String filename) throws IOException {
     byte[] contents = Files.readAllBytes(Path.of(path.toString() + "/" + filename));
     return new String(contents, Charset.forName("UTF-8"));
   }
@@ -45,14 +56,16 @@ public class FileFetcherImpl implements FileFetcher {
 }
 
 
+/** Filter file list */
 class FileFetcherFilter {
-
   public static Predicate<Path> byExtension(String extension) {
     return p -> p.toFile().getName().endsWith(extension);
   }
-
 }
 
+/**
+ * Collect list of file objects into list of file names
+ */
 class FileFetcherCollector implements Collector<Path, List<String>, List<String>> {
 
   @Override
@@ -62,9 +75,7 @@ class FileFetcherCollector implements Collector<Path, List<String>, List<String>
 
   @Override
   public BiConsumer<List<String>, Path> accumulator() {
-    return (list, path) -> {
-      list.add(path.getFileName().toString());
-    };
+    return (list, path) -> list.add(path.getFileName().toString());
   }
 
   @Override
@@ -84,6 +95,5 @@ class FileFetcherCollector implements Collector<Path, List<String>, List<String>
   public Set<Characteristics> characteristics() {
     return Collections.emptySet();
   }
-
 }
 

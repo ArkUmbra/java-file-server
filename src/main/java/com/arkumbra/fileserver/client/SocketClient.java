@@ -15,6 +15,12 @@ public class SocketClient implements Client {
   private ObjectOutputStream oos;
   private ObjectInputStream ois;
 
+  /**
+   * Opens a socket to a predefined server endpoint.
+   *
+   * @return response provider by server when accepting the connection.
+   * @throws ClientException if network error
+   */
   @Override
   public Response initConnection() throws ClientException {
     try {
@@ -33,6 +39,12 @@ public class SocketClient implements Client {
     return (Response) ois.readObject();
   }
 
+  /**
+   *
+   * @param input command to write to server socket
+   * @return Response from server
+   * @throws ClientException if network error, etc
+   */
   @Override
   public Response handleCommand(String input) throws ClientException {
     try {

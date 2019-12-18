@@ -12,6 +12,12 @@ public interface Client {
    */
   Response initConnection() throws ClientException;
 
+  /**
+   *
+   * @param input command
+   * @return response indicating success and contents
+   * @throws ClientException when connection issue, etc arises
+   */
   Response handleCommand(String input) throws ClientException;
 
 }

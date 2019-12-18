@@ -11,6 +11,9 @@ import java.net.Socket;
 import java.nio.file.NoSuchFileException;
 import java.util.Collection;
 
+/**
+ * Handles operations for a connected socket / client
+ */
 public class ClientMessageHandler implements Runnable {
 
   private String tag;
@@ -57,7 +60,6 @@ public class ClientMessageHandler implements Runnable {
       if (shouldExit) {
         running = false;
       }
-
     }
 
     log("Exiting");
