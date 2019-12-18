@@ -24,8 +24,10 @@ java -jar build/libs/java-file-client.jar
 ```
 
 # Run tests
-Run the unit tests for the application
+Run the unit tests for the application.
 
 ```
 ./gradlew clean test jacocoTestReport printTestCoverage
 ```
+
+In particular, see EndToEndTest.java for integration-style testing with multiple clients.
